@@ -4,9 +4,11 @@ package main
 import (
 	"flag"
 	"fmt"
+	"sync"
 
 	"github.com/andreshungbz/mpscan/internal/connection"
 	"github.com/andreshungbz/mpscan/internal/scan"
+	"github.com/vbauerster/mpb/v8"
 )
 
 var (
@@ -29,6 +31,39 @@ func main() {
 		Timeout:   timeoutF,
 	}
 
-	summary := connection.CreateSummary(flags)
+	s := "localhost"
+	flags2 := scan.Flags{
+		Target:    &s,
+		StartPort: startPortF,
+		EndPort:   endPortF,
+		Workers:   workersF,
+		Timeout:   timeoutF,
+	}
+
+	var wg sync.WaitGroup
+	wg.Add(2)
+	var summary scan.Summary
+	var summary2 scan.Summary
+
+	// Create a shared progress manager
+	p := mpb.New(mpb.WithWaitGroup(&wg))
+
+	go func() {
+		defer wg.Done()
+		summary = connection.CreateSummary(flags, p)
+	}()
+
+	go func() {
+		defer wg.Done()
+		summary2 = connection.CreateSummary(flags2, p)
+	}()
+
+	wg.Wait()
+	p.Wait()
+
+	connection.PrintBanner(summary, *flags.Timeout)
+	connection.PrintBanner(summary2, *flags2.Timeout)
+
 	fmt.Printf("%v\n", summary)
+	fmt.Printf("%v\n", summary2)
 }

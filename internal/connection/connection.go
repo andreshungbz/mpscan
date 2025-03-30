@@ -13,10 +13,13 @@ import (
 	"time"
 
 	"github.com/andreshungbz/mpscan/internal/scan"
+
+	"github.com/vbauerster/mpb/v8"
+	"github.com/vbauerster/mpb/v8/decor"
 )
 
 // CreateSummary concurrently scans the ports of a target hostname based on [scan.Flags] and returns a [scan.Summary].
-func CreateSummary(flags scan.Flags) scan.Summary {
+func CreateSummary(flags scan.Flags, p *mpb.Progress) scan.Summary {
 	var wg sync.WaitGroup
 	var mu sync.Mutex
 
@@ -29,13 +32,23 @@ func CreateSummary(flags scan.Flags) scan.Summary {
 
 	startTime := time.Now() // timer for the concurrent scan
 
+	bar := p.AddBar(int64(summary.TotalPortsScanned),
+		mpb.PrependDecorators(
+			decor.Name(fmt.Sprintf("%s: scanning ", summary.Hostname)),
+			decor.CountersNoUnit("%d/%d ports", decor.WCSyncWidth),
+		),
+		mpb.AppendDecorators(
+			decor.Percentage(),
+		),
+	)
+
 	// launch goroutines
 	for i := 1; i <= *flags.Workers; i++ {
 		wg.Add(1)
 
 		go func() {
 			defer wg.Done()
-			createWorker(addresses, dialer, &summary, &mu)
+			createWorker(addresses, dialer, &summary, &mu, bar)
 		}()
 	}
 
@@ -52,6 +65,54 @@ func CreateSummary(flags scan.Flags) scan.Summary {
 	return summary
 }
 
+// PrintBanner iterates through [scan.Summary.OpenPorts] and attempts to print banner information of each
+//
+// For HTTP port 80 an HTTP request is sent in order to read the response. For all other ports, it is assumed
+// that the server sends a response on TCP connection establishment.
+func PrintBanner(summary scan.Summary, timeout int) {
+	dialer := createDialer(timeout)
+
+	for _, port := range summary.OpenPorts {
+		target := net.JoinHostPort(summary.Hostname, strconv.Itoa(port))
+
+		conn, connErr := dialer.Dial("tcp", target)
+
+		if connErr == nil {
+			defer conn.Close()
+			conn.SetDeadline(time.Now().Add(dialer.Timeout))
+			result := make([]byte, 1024)
+
+			var err error
+			var n int
+
+			switch port {
+			case 80: // HTTP usually requires manually sending a request to get a banner
+				_, err = conn.Write([]byte("GET / HTTP/1.1\r\nHost: " + summary.Hostname + "\r\n\r\n")) // send an HTTP request
+				if err == nil {
+					_, err = conn.Read(result) // read the HTTP response
+					if err == nil {
+						res, err := http.ReadResponse(bufio.NewReader(bytes.NewReader(result)), nil) // convert to http.Response
+						if err == nil {
+							serverHeader := res.Header.Get("Server") // get Server header
+							copy(result[:], []byte(serverHeader))    // write contents to result
+							n = len(serverHeader)                    // adjust length to read
+						}
+					}
+				}
+			default: // banners can be protocol-dependent, so default to assuming one is automatically sent on connection
+				n, err = conn.Read(result)
+			}
+
+			// print the banner if nothing went wrong
+			if err == nil {
+				banner := strings.TrimSpace(string(result[:n]))
+				fmt.Printf("[banner] %s: %s\n", target, banner)
+			}
+		}
+	}
+
+}
+
 // HELPER FUNCTIONS
 
 // createWorker receives from a [scan.Address] channel and attempts to establish a TCP connection with [net.Dialer].
@@ -60,7 +121,7 @@ func CreateSummary(flags scan.Flags) scan.Summary {
 // Three attempts are made to establish a connection, with each failed attempt enacting a timer that increases via the an [exponential backoff algorithm].
 //
 // [exponential backoff algorithm]: https://en.wikipedia.org/wiki/Exponential_backoff
-func createWorker(addresses chan scan.Address, dialer net.Dialer, summary *scan.Summary, mu *sync.Mutex) {
+func createWorker(addresses chan scan.Address, dialer net.Dialer, summary *scan.Summary, mu *sync.Mutex, bar *mpb.Bar) {
 	maxRetries := 3
 
 	for address := range addresses {
@@ -71,9 +132,6 @@ func createWorker(addresses chan scan.Address, dialer net.Dialer, summary *scan.
 
 			// on successful connection, add the port, close the connection, and exit loop
 			if err == nil {
-				// print banner if available
-				printBanner(conn, dialer.Timeout, address.Hostname, address.Port)
-
 				mu.Lock()
 				summary.AddPort(address.Port)
 				mu.Unlock()
@@ -85,44 +143,8 @@ func createWorker(addresses chan scan.Address, dialer net.Dialer, summary *scan.
 			backoff := time.Duration(1<<i) * time.Second
 			time.Sleep(backoff) // apply exponential backoff timer
 		}
-	}
-}
 
-// printBanner reads the possible response for an open port, extracts banner information, then prints the result
-//
-// For HTTP port 80 an HTTP request is sent in order to read the response. For all other ports, it is assumed
-// that the server sends a response on TCP connection establishment.
-func printBanner(conn net.Conn, timeout time.Duration, hostname string, port int) {
-	target := net.JoinHostPort(hostname, strconv.Itoa(port))
-
-	conn.SetDeadline(time.Now().Add(timeout))
-	result := make([]byte, 1024)
-
-	var err error
-	var n int
-
-	switch port {
-	case 80: // HTTP usually requires manually sending a request to get a banner
-		_, err = conn.Write([]byte("GET / HTTP/1.1\r\nHost: " + hostname + "\r\n\r\n")) // send an HTTP request
-		if err == nil {
-			_, err = conn.Read(result) // read the HTTP response
-			if err == nil {
-				res, err := http.ReadResponse(bufio.NewReader(bytes.NewReader(result)), nil) // convert to http.Response
-				if err == nil {
-					serverHeader := res.Header.Get("Server") // get Server header
-					copy(result[:], []byte(serverHeader))    // write contents to result
-					n = len(serverHeader)                    // adjust length to read
-				}
-			}
-		}
-	default: // banners can be protocol-dependent, so default to assuming one is automatically sent on connection
-		n, err = conn.Read(result)
-	}
-
-	// print the banner if nothing went wrong
-	if err == nil {
-		banner := strings.TrimSpace(string(result[:n]))
-		fmt.Printf("[banner] %s: %s\n", target, banner)
+		bar.Increment()
 	}
 }
 
