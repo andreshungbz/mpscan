@@ -1,7 +1,7 @@
+// Package connection contains function abtractions for scanning hostnames and ports
 package connection
 
 import (
-	"fmt"
 	"net"
 	"strconv"
 	"sync"
@@ -10,67 +10,77 @@ import (
 	"github.com/andreshungbz/mpscan/internal/scan"
 )
 
+// createDialer returns an instance of [net.Dialer] with a custom [net.Dialer.Timeout] set.
 func createDialer(seconds int) net.Dialer {
 	return net.Dialer{
 		Timeout: time.Duration(seconds) * time.Second,
 	}
 }
 
-func createWorker(tasks chan scan.Address, dialer net.Dialer, summary *scan.Summary, mu *sync.Mutex) {
+// createWorker receives from a [scan.Address] channel and attempts to establish a TCP connection with [net.Dialer].
+//
+// Ports are added to [scan.Summary.OpenPorts] on successful connection.
+// Three attempts are made to establish a connection, with each failed attempt enacting a timer that increases via the an [exponential backoff algorithm].
+//
+// [exponential backoff algorithm]: https://en.wikipedia.org/wiki/Exponential_backoff
+func createWorker(addresses chan scan.Address, dialer net.Dialer, summary *scan.Summary, mu *sync.Mutex) {
 	maxRetries := 3
-	for address := range tasks {
-		summary.TotalPortsScanned++
+
+	for address := range addresses {
 		target := net.JoinHostPort(address.Hostname, strconv.Itoa(address.Port))
-		var success bool
 
 		for i := range maxRetries {
 			conn, err := dialer.Dial("tcp", target)
+
+			// on successful connection, add the port, close the connection, and exit loop
 			if err == nil {
-				conn.Close()
-				fmt.Printf("Connection to %s was successful\n", target)
 				mu.Lock()
 				summary.AddPort(address.Port)
 				mu.Unlock()
-				success = true
+
+				conn.Close()
 				break
 			}
 
 			backoff := time.Duration(1<<i) * time.Second
-			fmt.Printf("Attempt %d to %s failed. Waiting %v...\n", i+1, target, backoff)
-			time.Sleep(backoff)
-		}
-
-		if !success {
-			fmt.Printf("Failed to connect to %s after %d attempts\n", target, maxRetries)
+			time.Sleep(backoff) // apply exponential backoff timer
 		}
 	}
 }
 
+// CreateSummary concurrently scans the ports of a target hostname based on [scan.Flags] and returns a [scan.Summary].
 func CreateSummary(flags scan.Flags) scan.Summary {
 	var wg sync.WaitGroup
 	var mu sync.Mutex
-	tasks := make(chan scan.Address, 100)
+
+	addresses := make(chan scan.Address, 100)
 	dialer := createDialer(*flags.Timeout)
 
 	var summary scan.Summary
 	summary.Hostname = *flags.Target
+	summary.TotalPortsScanned = *flags.EndPort - *flags.StartPort + 1
 
-	startTime := time.Now()
+	startTime := time.Now() // timer for the concurrent scan
 
+	// launch goroutines
 	for i := 1; i <= *flags.Workers; i++ {
 		wg.Add(1)
+
 		go func() {
 			defer wg.Done()
-			createWorker(tasks, dialer, &summary, &mu)
+			createWorker(addresses, dialer, &summary, &mu)
 		}()
 	}
 
+	// send addresses to channel
 	for port := *flags.StartPort; port <= *flags.EndPort; port++ {
-		tasks <- scan.Address{Hostname: *flags.Target, Port: port}
+		addresses <- scan.Address{Hostname: *flags.Target, Port: port}
 	}
-	close(tasks)
 
-	wg.Wait()
-	summary.TimeTaken = time.Since(startTime)
+	close(addresses)
+	wg.Wait() // wait for all goroutines to complete
+
+	summary.TimeTaken = time.Since(startTime) // record the total scan time
+
 	return summary
 }

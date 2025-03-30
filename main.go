@@ -1,6 +1,4 @@
-// Filename: main.go
-// Purpose: This program demonstrates how to create a TCP network connection using Go
-
+// mpscan is a command-line utility that scans open ports on a target IP address or hostname.
 package main
 
 import (
