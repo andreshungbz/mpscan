@@ -46,7 +46,7 @@ func createWorker(tasks chan scan.Address, dialer net.Dialer, summary *scan.Summ
 	}
 }
 
-func CreateSummary(summaries chan scan.Summary, flags scan.Flags) {
+func CreateSummary(flags scan.Flags) scan.Summary {
 	var wg sync.WaitGroup
 	var mu sync.Mutex
 	tasks := make(chan scan.Address, 100)
@@ -72,5 +72,5 @@ func CreateSummary(summaries chan scan.Summary, flags scan.Flags) {
 
 	wg.Wait()
 	summary.TimeTaken = time.Since(startTime)
-	summaries <- summary
+	return summary
 }

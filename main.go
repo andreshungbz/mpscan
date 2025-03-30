@@ -23,8 +23,6 @@ func main() {
 	flag.Parse()
 	fmt.Printf("%v %v %v %v %v\n", *targetF, *startPortF, *endPortF, *workersF, *timeoutF)
 
-	summaries := make(chan scan.Summary, 1)
-
 	flags := scan.Flags{
 		Target:    targetF,
 		StartPort: startPortF,
@@ -33,9 +31,6 @@ func main() {
 		Timeout:   timeoutF,
 	}
 
-	connection.CreateSummary(summaries, flags)
-
-	summary := <-summaries
-
+	summary := connection.CreateSummary(flags)
 	fmt.Printf("%v\n", summary)
 }
