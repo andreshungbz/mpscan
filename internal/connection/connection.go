@@ -72,7 +72,7 @@ func createWorker(addresses chan scan.Address, dialer net.Dialer, summary *scan.
 			// on successful connection, add the port, close the connection, and exit loop
 			if err == nil {
 				// print banner if available
-				printBanner(conn, address.Hostname, address.Port)
+				printBanner(conn, dialer.Timeout, address.Hostname, address.Port)
 
 				mu.Lock()
 				summary.AddPort(address.Port)
@@ -92,9 +92,10 @@ func createWorker(addresses chan scan.Address, dialer net.Dialer, summary *scan.
 //
 // For HTTP port 80 an HTTP request is sent in order to read the response. For all other ports, it is assumed
 // that the server sends a response on TCP connection establishment.
-func printBanner(conn net.Conn, hostname string, port int) {
+func printBanner(conn net.Conn, timeout time.Duration, hostname string, port int) {
 	target := net.JoinHostPort(hostname, strconv.Itoa(port))
 
+	conn.SetDeadline(time.Now().Add(timeout))
 	result := make([]byte, 1024)
 
 	var err error
