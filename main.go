@@ -4,39 +4,49 @@
 package main
 
 import (
-	"net"
-	"strconv"
+	"flag"
+	"fmt"
 	"sync"
+	"time"
 
 	"github.com/andreshungbz/mpscan/internal/connection"
+	"github.com/andreshungbz/mpscan/internal/scan"
 )
 
+var targetF = flag.String("target", "localhost", "the hostname or IP address to be scanned")
+var startPortF = flag.Int("start-port", 1, "the lower bound port to begin scanning")
+var endPortF = flag.Int("end-port", 1024, "the upper bound port to finish scanning")
+var workersF = flag.Int("workers", 100, "the number of concurrent goroutines to launch")
+var timeoutF = flag.Int("timeout", 5, "the maximum time in seconds to wait for a connection to be established")
+
 func main() {
+	flag.Parse()
+	fmt.Printf("%v %v %v %v %v\n", *targetF, *startPortF, *endPortF, *workersF, *timeoutF)
 
 	var wg sync.WaitGroup
-	tasks := make(chan string, 100)
+	tasks := make(chan scan.Address, 100)
+	dialer := connection.CreateDialer(*timeoutF)
 
-	target := "scanme.nmap.org"
+	var summary scan.Summary
+	summary.Hostname = *targetF
 
-	dialer := connection.CreateDialer(5)
-
-	workers := 100
-
-	for i := 1; i <= workers; i++ {
+	startTime := time.Now()
+	for i := 1; i <= *workersF; i++ {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			connection.CreateWorker(tasks, dialer)
+			connection.CreateWorker(tasks, dialer, &summary)
 		}()
 	}
 
-	ports := 100
-
-	for p := 1; p <= ports; p++ {
-		port := strconv.Itoa(p)
-		address := net.JoinHostPort(target, port)
-		tasks <- address
+	for port := *startPortF; port <= *endPortF; port++ {
+		tasks <- scan.Address{Hostname: *targetF, Port: port}
 	}
+
 	close(tasks)
+
 	wg.Wait()
+
+	summary.TimeTaken = time.Since(startTime)
+	fmt.Printf("%v\n", summary)
 }
