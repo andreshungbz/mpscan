@@ -2,8 +2,13 @@
 package connection
 
 import (
+	"bufio"
+	"bytes"
+	"fmt"
 	"net"
+	"net/http"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -34,6 +39,8 @@ func createWorker(addresses chan scan.Address, dialer net.Dialer, summary *scan.
 
 			// on successful connection, add the port, close the connection, and exit loop
 			if err == nil {
+				printBanner(conn, address.Hostname, address.Port)
+
 				mu.Lock()
 				summary.AddPort(address.Port)
 				mu.Unlock()
@@ -45,6 +52,43 @@ func createWorker(addresses chan scan.Address, dialer net.Dialer, summary *scan.
 			backoff := time.Duration(1<<i) * time.Second
 			time.Sleep(backoff) // apply exponential backoff timer
 		}
+	}
+}
+
+// printBanner reads the possible response for an open port, extracts banner information, then prints the result
+//
+// For HTTP port 80 an HTTP request is sent in order to read the response. For all other ports, it is assumed
+// that the server sends a response on TCP connection establishment.
+func printBanner(conn net.Conn, hostname string, port int) {
+	target := net.JoinHostPort(hostname, strconv.Itoa(port))
+
+	result := make([]byte, 1024)
+
+	var err error
+	var n int
+
+	switch port {
+	case 80: // HTTP usually requires manually sending a request to get a banner
+		_, err = conn.Write([]byte("GET / HTTP/1.1\r\nHost: " + hostname + "\r\n\r\n")) // send an HTTP request
+		if err == nil {
+			_, err = conn.Read(result) // read the HTTP response
+			if err == nil {
+				res, err := http.ReadResponse(bufio.NewReader(bytes.NewReader(result)), nil) // convert to http.Response
+				if err == nil {
+					serverHeader := res.Header.Get("Server") // get Server header
+					copy(result[:], []byte(serverHeader))    // write contents to result
+					n = len(serverHeader)                    // adjust length to read
+				}
+			}
+		}
+	default: // banners can be protocol-dependent, so default to assuming one is automatically sent on connection
+		n, err = conn.Read(result)
+	}
+
+	// print the banner if nothing went wrong
+	if err == nil {
+		banner := strings.TrimSpace(string(result[:n]))
+		fmt.Printf("[banner] %s: %s\n", target, banner)
 	}
 }
 
