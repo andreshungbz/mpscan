@@ -19,8 +19,8 @@ type Summary struct {
 // Print format of a [Summary].
 func (s Summary) String() string {
 	return fmt.Sprintf(
-		"[summary/%s]\nTotal Ports Scanned: %d\nOpen Ports Count: %d\nOpen Ports: %v\nTime Taken: %s",
-		s.Hostname, s.TotalPortsScanned, s.OpenPortCount, s.OpenPorts, s.TimeTaken,
+		"[summary/%s]\nTotal Ports Scanned: %d\nOpen Ports Count: %d\nOpen Ports: %v\nTime Taken: %.3fs",
+		s.Hostname, s.TotalPortsScanned, s.OpenPortCount, s.OpenPorts, s.TimeTaken.Seconds(),
 	)
 }
 
