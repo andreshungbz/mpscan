@@ -15,12 +15,44 @@ import (
 	"github.com/andreshungbz/mpscan/internal/scan"
 )
 
-// createDialer returns an instance of [net.Dialer] with a custom [net.Dialer.Timeout] set.
-func createDialer(seconds int) net.Dialer {
-	return net.Dialer{
-		Timeout: time.Duration(seconds) * time.Second,
+// CreateSummary concurrently scans the ports of a target hostname based on [scan.Flags] and returns a [scan.Summary].
+func CreateSummary(flags scan.Flags) scan.Summary {
+	var wg sync.WaitGroup
+	var mu sync.Mutex
+
+	addresses := make(chan scan.Address, 100)
+	dialer := createDialer(*flags.Timeout)
+
+	var summary scan.Summary
+	summary.Hostname = *flags.Target
+	summary.TotalPortsScanned = *flags.EndPort - *flags.StartPort + 1
+
+	startTime := time.Now() // timer for the concurrent scan
+
+	// launch goroutines
+	for i := 1; i <= *flags.Workers; i++ {
+		wg.Add(1)
+
+		go func() {
+			defer wg.Done()
+			createWorker(addresses, dialer, &summary, &mu)
+		}()
 	}
+
+	// send addresses to channel
+	for port := *flags.StartPort; port <= *flags.EndPort; port++ {
+		addresses <- scan.Address{Hostname: *flags.Target, Port: port}
+	}
+
+	close(addresses)
+	wg.Wait() // wait for all goroutines to complete
+
+	summary.TimeTaken = time.Since(startTime) // record the total scan time
+
+	return summary
 }
+
+// HELPER FUNCTIONS
 
 // createWorker receives from a [scan.Address] channel and attempts to establish a TCP connection with [net.Dialer].
 //
@@ -39,6 +71,7 @@ func createWorker(addresses chan scan.Address, dialer net.Dialer, summary *scan.
 
 			// on successful connection, add the port, close the connection, and exit loop
 			if err == nil {
+				// print banner if available
 				printBanner(conn, address.Hostname, address.Port)
 
 				mu.Lock()
@@ -92,39 +125,9 @@ func printBanner(conn net.Conn, hostname string, port int) {
 	}
 }
 
-// CreateSummary concurrently scans the ports of a target hostname based on [scan.Flags] and returns a [scan.Summary].
-func CreateSummary(flags scan.Flags) scan.Summary {
-	var wg sync.WaitGroup
-	var mu sync.Mutex
-
-	addresses := make(chan scan.Address, 100)
-	dialer := createDialer(*flags.Timeout)
-
-	var summary scan.Summary
-	summary.Hostname = *flags.Target
-	summary.TotalPortsScanned = *flags.EndPort - *flags.StartPort + 1
-
-	startTime := time.Now() // timer for the concurrent scan
-
-	// launch goroutines
-	for i := 1; i <= *flags.Workers; i++ {
-		wg.Add(1)
-
-		go func() {
-			defer wg.Done()
-			createWorker(addresses, dialer, &summary, &mu)
-		}()
+// createDialer returns an instance of [net.Dialer] with a custom [net.Dialer.Timeout] set.
+func createDialer(seconds int) net.Dialer {
+	return net.Dialer{
+		Timeout: time.Duration(seconds) * time.Second,
 	}
-
-	// send addresses to channel
-	for port := *flags.StartPort; port <= *flags.EndPort; port++ {
-		addresses <- scan.Address{Hostname: *flags.Target, Port: port}
-	}
-
-	close(addresses)
-	wg.Wait() // wait for all goroutines to complete
-
-	summary.TimeTaken = time.Since(startTime) // record the total scan time
-
-	return summary
 }
