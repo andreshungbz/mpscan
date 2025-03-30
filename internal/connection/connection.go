@@ -1,4 +1,4 @@
-// Package connection contains function abtractions for scanning hostnames and ports
+// Package connection contains function abstractions for scanning hostnames and ports
 package connection
 
 import (
