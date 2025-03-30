@@ -31,3 +31,11 @@ type Address struct {
 	Hostname string
 	Port     int
 }
+
+type Flags struct {
+	Target    *string
+	StartPort *int
+	EndPort   *int
+	Workers   *int
+	Timeout   *int
+}
