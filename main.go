@@ -26,6 +26,8 @@ func main() {
 		portsF   scan.PortList
 		targetsF scan.TargetList
 		jsonF    = flag.Bool("json", false, "indicates whether to also output JSON")
+
+		debugF = flag.Bool("debug", false, "displays flag values for debugging")
 	)
 
 	flag.Var(&portsF, "ports", "comma-separated list of ports (e.g., -ports=22,80,443)")
@@ -36,8 +38,6 @@ func main() {
 	// change start and end ports to defaults if they are outside the valid port range 1-65535
 	helper.ValidateSEPorts(startPortF, endPortF)
 
-	// fmt.Printf("%v %v %v %v %v %v %v\n", *targetF, *startPortF, *endPortF, *workersF, *timeoutF, portsF, targetsF) // values check
-
 	// SYNCHRONIZATION SETUP & SCANS
 
 	var wg sync.WaitGroup
@@ -45,6 +45,21 @@ func main() {
 
 	targets := helper.CreateTargets(*targetF, targetsF)
 	var summaries []scan.Summary
+
+	// print all flag values if -debug is set
+	if *debugF {
+		fmt.Printf("\n[DEBUG]\n\n")
+		fmt.Printf("%-15s %s\n", "[-target]", *targetF)
+		fmt.Printf("%-15s %d\n", "[-start-port]", *startPortF)
+		fmt.Printf("%-15s %d\n", "[-end-port]", *endPortF)
+		fmt.Printf("%-15s %d\n", "[-workers]", *workersF)
+		fmt.Printf("%-15s %d\n", "[-timeout]", *timeoutF)
+		fmt.Printf("%-15s %v\n", "[-ports]", portsF)
+		fmt.Printf("%-15s %v\n", "[-targets]", targetsF)
+		fmt.Printf("%-15s %v\n", "[-json]", *jsonF)
+		fmt.Printf("%-15s %v\n", "[-debug]", *debugF)
+		fmt.Printf("%-15s %v\n", "[TARGETS]", targets)
+	}
 
 	fmt.Printf("\n[SCAN START]\n\n")
 	for _, target := range targets {
