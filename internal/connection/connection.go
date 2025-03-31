@@ -123,7 +123,7 @@ func PrintBanner(summary scan.Summary, timeout int) {
 			// print the banner if nothing went wrong
 			if err == nil {
 				banner := strings.TrimSpace(string(result[:n]))
-				fmt.Printf("[banner/%s] %s\n", target, banner)
+				fmt.Printf("[%s] %s\n", target, banner)
 			}
 		}
 	}
