@@ -118,6 +118,10 @@ func PrintBanner(summary scan.Summary, timeout int) {
 							}
 
 							if serverHeader == "" {
+								serverHeader = res.Header.Get("Date") // get date if none others match.
+							}
+
+							if serverHeader == "" {
 								err = fmt.Errorf("no banner information found in headers") // assign arbitrary error
 							}
 
