@@ -41,8 +41,6 @@ func CreateSummary(flags scan.Flags, p *mpb.Progress) scan.Summary {
 		summary.TotalPortsScanned = len(flags.Ports)
 	}
 
-	startTime := time.Now() // timer for the concurrent scan
-
 	// create a mpb to keep of progress
 	bar := p.AddBar(int64(summary.TotalPortsScanned),
 		mpb.PrependDecorators(
@@ -53,6 +51,8 @@ func CreateSummary(flags scan.Flags, p *mpb.Progress) scan.Summary {
 			decor.Percentage(),
 		),
 	)
+
+	startTime := time.Now() // timer for the concurrent scan
 
 	// launch goroutines
 	for i := 1; i <= flags.Workers; i++ {
