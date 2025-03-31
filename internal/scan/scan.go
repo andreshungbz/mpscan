@@ -37,7 +37,7 @@ type Address struct {
 	Port     int
 }
 
-// Flags represents the used paramters when conducting a scan.
+// Flags represents the used parameters when conducting a scan.
 type Flags struct {
 	Target    string
 	StartPort int
