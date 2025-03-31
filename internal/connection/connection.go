@@ -127,7 +127,7 @@ func createWorker(addresses chan scan.Address, dialer net.Dialer, summary *scan.
 	for address := range addresses {
 		target := net.JoinHostPort(address.Hostname, strconv.Itoa(address.Port))
 
-		for i := range maxRetries {
+		for i := 1; i <= maxRetries; i++ {
 			conn, err := dialer.Dial("tcp", target)
 
 			// on successful connection, add the port, close the connection, and exit loop
@@ -140,6 +140,7 @@ func createWorker(addresses chan scan.Address, dialer net.Dialer, summary *scan.
 				break
 			}
 
+			fmt.Println(i)
 			backoff := time.Duration(1<<i) * time.Second
 			time.Sleep(backoff) // apply exponential backoff timer
 		}
