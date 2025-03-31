@@ -155,7 +155,7 @@ func PrintBanner(summary scan.Summary, timeout int) {
 //
 // [exponential backoff algorithm]: https://en.wikipedia.org/wiki/Exponential_backoff
 func createWorker(addresses chan scan.Address, dialer net.Dialer, summary *scan.Summary, mu *sync.Mutex, bar *mpb.Bar) {
-	maxRetries := 2
+	maxRetries := 1
 
 	for address := range addresses {
 		target := net.JoinHostPort(address.Hostname, strconv.Itoa(address.Port))
