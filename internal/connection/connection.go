@@ -20,6 +20,8 @@ import (
 )
 
 // CreateSummary concurrently scans the ports of a target hostname based on [scan.Flags] and returns a [scan.Summary].
+//
+// If [scan.Flags.Ports] contains values, it overrides scanning based on [scan.Flags.StartPort] and [scan.Flags.EndPort].
 func CreateSummary(flags scan.Flags, p *mpb.Progress) scan.Summary {
 	var wg sync.WaitGroup
 	var mu sync.Mutex
@@ -27,9 +29,17 @@ func CreateSummary(flags scan.Flags, p *mpb.Progress) scan.Summary {
 	addresses := make(chan scan.Address, 100)
 	dialer := createDialer(flags.Timeout)
 
+	// portsOverride defines whether or not -ports overrides -start-port and -end-port
+	portsOverride := len(flags.Ports) > 0
+
 	var summary scan.Summary
 	summary.Hostname = flags.Target
-	summary.TotalPortsScanned = flags.EndPort - flags.StartPort + 1
+
+	if !portsOverride {
+		summary.TotalPortsScanned = flags.EndPort - flags.StartPort + 1
+	} else {
+		summary.TotalPortsScanned = len(flags.Ports)
+	}
 
 	startTime := time.Now() // timer for the concurrent scan
 
@@ -54,8 +64,14 @@ func CreateSummary(flags scan.Flags, p *mpb.Progress) scan.Summary {
 	}
 
 	// send addresses to channel
-	for port := flags.StartPort; port <= flags.EndPort; port++ {
-		addresses <- scan.Address{Hostname: flags.Target, Port: port}
+	if !portsOverride {
+		for port := flags.StartPort; port <= flags.EndPort; port++ {
+			addresses <- scan.Address{Hostname: flags.Target, Port: port}
+		}
+	} else {
+		for _, port := range flags.Ports {
+			addresses <- scan.Address{Hostname: flags.Target, Port: port}
+		}
 	}
 
 	close(addresses)

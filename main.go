@@ -20,8 +20,11 @@ var (
 )
 
 func main() {
+	var portsF scan.PortList
+	flag.Var(&portsF, "ports", "comma-separated list of ports (e.g., -ports=22,80,443)")
+
 	flag.Parse()
-	fmt.Printf("%v %v %v %v %v\n", *targetF, *startPortF, *endPortF, *workersF, *timeoutF)
+	fmt.Printf("%v %v %v %v %v %v\n", *targetF, *startPortF, *endPortF, *workersF, *timeoutF, portsF)
 
 	flags := scan.Flags{
 		Target:    *targetF,
@@ -29,6 +32,7 @@ func main() {
 		EndPort:   *endPortF,
 		Workers:   *workersF,
 		Timeout:   *timeoutF,
+		Ports:     portsF,
 	}
 
 	flags2 := scan.Flags{
@@ -37,6 +41,7 @@ func main() {
 		EndPort:   *endPortF,
 		Workers:   *workersF,
 		Timeout:   *timeoutF,
+		Ports:     portsF,
 	}
 
 	var wg sync.WaitGroup

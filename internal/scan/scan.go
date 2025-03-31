@@ -4,6 +4,7 @@ package scan
 import (
 	"fmt"
 	"sort"
+	"strings"
 	"time"
 )
 
@@ -44,4 +45,32 @@ type Flags struct {
 	EndPort   int
 	Workers   int
 	Timeout   int
+
+	Ports PortList
+}
+
+// PortsList is a custom flag type for specifying multiple particular ports
+type PortList []int
+
+// Set is the method called by [flag.Var] to parsing values
+func (pl *PortList) Set(value string) error {
+	ports := strings.Split(value, ",")
+	for _, port := range ports {
+		var portNum int
+		_, err := fmt.Sscanf(port, "%d", &portNum)
+		if err != nil {
+			return fmt.Errorf("invalid port number: %s", port)
+		}
+		*pl = append(*pl, portNum)
+	}
+	return nil
+}
+
+// Print format of a [PortsList]
+func (p *PortList) String() string {
+	strPorts := make([]string, len(*p))
+	for i, port := range *p {
+		strPorts[i] = fmt.Sprintf("%d", port)
+	}
+	return strings.Join(strPorts, ",")
 }
