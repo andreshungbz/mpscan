@@ -2,9 +2,12 @@
 package main
 
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
+	"os"
 	"sync"
+	"time"
 
 	"github.com/andreshungbz/mpscan/internal/connection"
 	"github.com/andreshungbz/mpscan/internal/scan"
@@ -24,6 +27,7 @@ func main() {
 
 		portsF   scan.PortList
 		targetsF scan.TargetList
+		jsonF    = flag.Bool("json", false, "indicates whether to also output JSON")
 	)
 
 	flag.Var(&portsF, "ports", "comma-separated list of ports (e.g., -ports=22,80,443)")
@@ -64,7 +68,7 @@ func main() {
 
 	// RESULTS
 
-	printResults(summaries, *timeoutF)
+	printResults(summaries, *timeoutF, *jsonF)
 }
 
 // createTargets aggregates all hostnames from the -target and -targets flags.
@@ -87,7 +91,7 @@ func createTargets(target string, targets []string) []string {
 }
 
 // printResults prints the banners and summaries from the scan.
-func printResults(summaries []scan.Summary, timeout int) {
+func printResults(summaries []scan.Summary, timeout int, outputJSON bool) {
 	fmt.Printf("\n[BANNERS]\n\n")
 	for _, summary := range summaries {
 		connection.PrintBanner(summary, timeout)
@@ -96,5 +100,24 @@ func printResults(summaries []scan.Summary, timeout int) {
 	fmt.Printf("\n[SCAN SUMMARY]\n\n")
 	for _, summary := range summaries {
 		fmt.Printf("%v\n\n", summary)
+	}
+
+	if outputJSON {
+		// convert slice to summaries into an array of objects
+		jsonData, err := json.MarshalIndent(summaries, "", "  ")
+		if err != nil {
+			fmt.Printf("Error converting summaries to JSON: %v\n", err)
+			return
+		}
+
+		// write JSON to a file
+		filename := time.Now().Format("20060102-150405") + "-mpscan.json"
+		err = os.WriteFile(filename, jsonData, 0644) // -rw-r--r-- permissions
+		if err != nil {
+			fmt.Println("Error writing to file:", err)
+			return
+		}
+
+		fmt.Printf("[JSON OUTPUT SAVED: %s]\n", filename)
 	}
 }
