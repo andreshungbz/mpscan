@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"sync"
 	"time"
 
 	"github.com/andreshungbz/mpscan/internal/connection"
@@ -32,10 +33,16 @@ func CreateTargets(target string, targets []string) []string {
 
 // printResults prints the banners and summaries from the scan.
 func PrintResults(summaries []scan.Summary, timeout int, outputJSON bool) {
+	var wg sync.WaitGroup
 	fmt.Printf("\n[BANNERS]\n\n")
 	for _, summary := range summaries {
-		connection.PrintBanner(summary, timeout)
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			connection.PrintBanner(summary, timeout)
+		}()
 	}
+	wg.Wait()
 
 	fmt.Printf("\n[SCAN SUMMARY]\n\n")
 	for _, summary := range summaries {
