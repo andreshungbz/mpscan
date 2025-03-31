@@ -25,11 +25,11 @@ func CreateSummary(flags scan.Flags, p *mpb.Progress) scan.Summary {
 	var mu sync.Mutex
 
 	addresses := make(chan scan.Address, 100)
-	dialer := createDialer(*flags.Timeout)
+	dialer := createDialer(flags.Timeout)
 
 	var summary scan.Summary
-	summary.Hostname = *flags.Target
-	summary.TotalPortsScanned = *flags.EndPort - *flags.StartPort + 1
+	summary.Hostname = flags.Target
+	summary.TotalPortsScanned = flags.EndPort - flags.StartPort + 1
 
 	startTime := time.Now() // timer for the concurrent scan
 
@@ -44,7 +44,7 @@ func CreateSummary(flags scan.Flags, p *mpb.Progress) scan.Summary {
 	)
 
 	// launch goroutines
-	for i := 1; i <= *flags.Workers; i++ {
+	for i := 1; i <= flags.Workers; i++ {
 		wg.Add(1)
 
 		go func() {
@@ -54,8 +54,8 @@ func CreateSummary(flags scan.Flags, p *mpb.Progress) scan.Summary {
 	}
 
 	// send addresses to channel
-	for port := *flags.StartPort; port <= *flags.EndPort; port++ {
-		addresses <- scan.Address{Hostname: *flags.Target, Port: port}
+	for port := flags.StartPort; port <= flags.EndPort; port++ {
+		addresses <- scan.Address{Hostname: flags.Target, Port: port}
 	}
 
 	close(addresses)

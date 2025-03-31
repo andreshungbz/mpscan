@@ -24,20 +24,19 @@ func main() {
 	fmt.Printf("%v %v %v %v %v\n", *targetF, *startPortF, *endPortF, *workersF, *timeoutF)
 
 	flags := scan.Flags{
-		Target:    targetF,
-		StartPort: startPortF,
-		EndPort:   endPortF,
-		Workers:   workersF,
-		Timeout:   timeoutF,
+		Target:    *targetF,
+		StartPort: *startPortF,
+		EndPort:   *endPortF,
+		Workers:   *workersF,
+		Timeout:   *timeoutF,
 	}
 
-	s := "localhost"
 	flags2 := scan.Flags{
-		Target:    &s,
-		StartPort: startPortF,
-		EndPort:   endPortF,
-		Workers:   workersF,
-		Timeout:   timeoutF,
+		Target:    "localhost",
+		StartPort: *startPortF,
+		EndPort:   *endPortF,
+		Workers:   *workersF,
+		Timeout:   *timeoutF,
 	}
 
 	var wg sync.WaitGroup
@@ -61,8 +60,8 @@ func main() {
 	wg.Wait()
 	p.Wait()
 
-	connection.PrintBanner(summary, *flags.Timeout)
-	connection.PrintBanner(summary2, *flags2.Timeout)
+	connection.PrintBanner(summary, flags.Timeout)
+	connection.PrintBanner(summary2, flags2.Timeout)
 
 	fmt.Printf("%v\n", summary)
 	fmt.Printf("%v\n", summary2)

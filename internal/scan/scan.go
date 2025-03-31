@@ -39,9 +39,9 @@ type Address struct {
 
 // Flags represents the used paramters when conducting a scan.
 type Flags struct {
-	Target    *string
-	StartPort *int
-	EndPort   *int
-	Workers   *int
-	Timeout   *int
+	Target    string
+	StartPort int
+	EndPort   int
+	Workers   int
+	Timeout   int
 }
