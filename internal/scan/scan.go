@@ -8,6 +8,23 @@ import (
 	"time"
 )
 
+// Address represents a simple pairing of hostname and port.
+type Address struct {
+	Hostname string
+	Port     int
+}
+
+// Flags represents the used parameters when conducting a scan.
+type Flags struct {
+	Target    string
+	StartPort int
+	EndPort   int
+	Workers   int
+	Timeout   int
+
+	Ports PortList
+}
+
 // Summary represents the statistics of a particular scan.
 type Summary struct {
 	Hostname          string
@@ -32,22 +49,7 @@ func (s *Summary) AddPort(port int) {
 	s.OpenPortCount = len(s.OpenPorts)
 }
 
-// Address represents a simple pairing of hostname and port.
-type Address struct {
-	Hostname string
-	Port     int
-}
-
-// Flags represents the used parameters when conducting a scan.
-type Flags struct {
-	Target    string
-	StartPort int
-	EndPort   int
-	Workers   int
-	Timeout   int
-
-	Ports PortList
-}
+// CUSTOM FLAGS
 
 // PortsList is a custom flag type for specifying multiple particular ports.
 type PortList []int
