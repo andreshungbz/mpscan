@@ -59,7 +59,7 @@ func CreateSummary(flags scan.Flags, p *mpb.Progress) scan.Summary {
 
 		go func() {
 			defer wg.Done()
-			createWorker(addresses, dialer, &summary, &mu, bar)
+			attemptScan(addresses, dialer, &summary, &mu, bar)
 		}()
 	}
 
@@ -147,14 +147,14 @@ func PrintBanner(summary scan.Summary, timeout int) {
 
 // HELPER FUNCTIONS
 
-// createWorker receives from a [scan.Address] channel and attempts to establish a TCP connection with [net.Dialer].
+// attemptScan receives from a [scan.Address] channel and attempts to establish a TCP connection with [net.Dialer].
 //
 // Ports are added to [scan.Summary.OpenPorts] on successful connection.
 // Three attempts are made to establish a connection, with each failed attempt enacting a timer that increases via the an [exponential backoff algorithm].
 // A random value from 0.0 to 1.0 is also multiplied to the timer to add variance.
 //
 // [exponential backoff algorithm]: https://en.wikipedia.org/wiki/Exponential_backoff
-func createWorker(addresses chan scan.Address, dialer net.Dialer, summary *scan.Summary, mu *sync.Mutex, bar *mpb.Bar) {
+func attemptScan(addresses chan scan.Address, dialer net.Dialer, summary *scan.Summary, mu *sync.Mutex, bar *mpb.Bar) {
 	maxRetries := 1
 
 	for address := range addresses {
