@@ -5,6 +5,7 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
+	"math/rand"
 	"net"
 	"net/http"
 	"strconv"
@@ -119,6 +120,7 @@ func PrintBanner(summary scan.Summary, timeout int) {
 //
 // Ports are added to [scan.Summary.OpenPorts] on successful connection.
 // Three attempts are made to establish a connection, with each failed attempt enacting a timer that increases via the an [exponential backoff algorithm].
+// A random value from 0.0 to 1.0 is also multiplied to the timer to add variance.
 //
 // [exponential backoff algorithm]: https://en.wikipedia.org/wiki/Exponential_backoff
 func createWorker(addresses chan scan.Address, dialer net.Dialer, summary *scan.Summary, mu *sync.Mutex, bar *mpb.Bar) {
@@ -140,8 +142,8 @@ func createWorker(addresses chan scan.Address, dialer net.Dialer, summary *scan.
 				break
 			}
 
-			fmt.Println(i)
-			backoff := time.Duration(1<<i) * time.Second
+			inital := 1 << i
+			backoff := time.Duration(float64(inital)*rand.Float64()) * time.Second
 			time.Sleep(backoff) // apply exponential backoff timer
 		}
 
