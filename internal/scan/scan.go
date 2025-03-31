@@ -58,8 +58,8 @@ func (pl *PortList) Set(value string) error {
 	for _, port := range ports {
 		var portNum int
 		_, err := fmt.Sscanf(port, "%d", &portNum)
-		if err != nil {
-			return fmt.Errorf("invalid port number: %s", port)
+		if err != nil || portNum < 1 || portNum > 65535 {
+			continue
 		}
 		*pl = append(*pl, portNum)
 	}

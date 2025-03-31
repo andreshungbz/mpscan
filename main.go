@@ -33,6 +33,9 @@ func main() {
 
 	flag.Parse()
 
+	// change start and end ports to defaults if they are outside the valid port range 1-65535
+	helper.ValidateSEPorts(startPortF, endPortF)
+
 	// fmt.Printf("%v %v %v %v %v %v %v\n", *targetF, *startPortF, *endPortF, *workersF, *timeoutF, portsF, targetsF) // values check
 
 	// SYNCHRONIZATION SETUP & SCANS

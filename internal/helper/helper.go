@@ -12,7 +12,7 @@ import (
 	"github.com/andreshungbz/mpscan/internal/scan"
 )
 
-// createTargets aggregates all hostnames from the -target and -targets flags.
+// CreateTargets aggregates all hostnames from the -target and -targets flags.
 //
 // If there are no viable values, a default "localhost" is added.
 func CreateTargets(target string, targets []string) []string {
@@ -31,7 +31,7 @@ func CreateTargets(target string, targets []string) []string {
 	return results
 }
 
-// printResults prints the banners and summaries from the scan.
+// PrintResults prints the banners and summaries from the scan.
 func PrintResults(summaries []scan.Summary, timeout int, outputJSON bool) {
 	var wg sync.WaitGroup
 	fmt.Printf("\n[BANNERS]\n\n")
@@ -66,5 +66,16 @@ func PrintResults(summaries []scan.Summary, timeout int, outputJSON bool) {
 		}
 
 		fmt.Printf("[JSON OUTPUT SAVED: %s]\n", filename)
+	}
+}
+
+// ValidateSEPorts adjusts the values of -start-port and -end-port if they are out of the valid 1-65535 port range
+func ValidateSEPorts(startPort *int, endPort *int) {
+	if *startPort < 1 || *startPort > 65535 {
+		*startPort = 1
+	}
+
+	if *endPort < 1 || *endPort > 65535 {
+		*endPort = 1024
 	}
 }
