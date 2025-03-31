@@ -108,14 +108,25 @@ func PrintBanner(summary scan.Summary, timeout int) {
 				if err == nil {
 					_, err = conn.Read(result) // read the HTTP response
 					if err == nil {
-						res, err := http.ReadResponse(bufio.NewReader(bytes.NewReader(result)), nil) // convert to http.Response
-						if err == nil {
+						res, resErr := http.ReadResponse(bufio.NewReader(bytes.NewReader(result)), nil) // convert to http.Response
+						err = resErr
+						if resErr == nil {
 							serverHeader := res.Header.Get("Server") // get Server header
-							copy(result[:], []byte(serverHeader))    // write contents to result
-							n = len(serverHeader)                    // adjust length to read
+
+							if serverHeader == "" {
+								serverHeader = res.Header.Get("X-Powered-By") // check X-Powered-By if Server is empty
+							}
+
+							if serverHeader == "" {
+								err = fmt.Errorf("no banner information found in headers") // assign arbitrary error
+							}
+
+							copy(result[:], []byte(serverHeader)) // write contents to result
+							n = len(serverHeader)                 // adjust length to read
 						}
 					}
 				}
+
 			default: // banners can be protocol-dependent, so default to assuming one is automatically sent on connection
 				n, err = conn.Read(result)
 			}
