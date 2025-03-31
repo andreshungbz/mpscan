@@ -49,10 +49,10 @@ type Flags struct {
 	Ports PortList
 }
 
-// PortsList is a custom flag type for specifying multiple particular ports
+// PortsList is a custom flag type for specifying multiple particular ports.
 type PortList []int
 
-// Set is the method called by [flag.Var] to parsing values
+// Set is the method called by [flag.Var] to parsing values.
 func (pl *PortList) Set(value string) error {
 	ports := strings.Split(value, ",")
 	for _, port := range ports {
@@ -66,11 +66,24 @@ func (pl *PortList) Set(value string) error {
 	return nil
 }
 
-// Print format of a [PortsList]
 func (p *PortList) String() string {
 	strPorts := make([]string, len(*p))
 	for i, port := range *p {
 		strPorts[i] = fmt.Sprintf("%d", port)
 	}
 	return strings.Join(strPorts, ",")
+}
+
+// TargetList is a custom flag type for specifying multiple targets.
+type TargetList []string
+
+// Set is the method called by [flag.Var] to parsing values.
+func (t *TargetList) Set(value string) error {
+	*t = strings.Split(value, ",")
+	return nil
+}
+
+// Print format of a [TargetList].
+func (t *TargetList) String() string {
+	return strings.Join(*t, ",")
 }
