@@ -43,10 +43,11 @@ func CreateSummary(flags scan.Flags, p *mpb.Progress) scan.Summary {
 
 	startTime := time.Now() // timer for the concurrent scan
 
+	// create a mpb to keep of progress
 	bar := p.AddBar(int64(summary.TotalPortsScanned),
 		mpb.PrependDecorators(
-			decor.Name(fmt.Sprintf("%s: scanning ", summary.Hostname)),
-			decor.CountersNoUnit("%d/%d ports", decor.WCSyncWidth),
+			decor.Name(fmt.Sprintf("[%s]", summary.Hostname), decor.WCSyncWidthR),
+			decor.CountersNoUnit(" [%d/%d ports]", decor.WCSyncWidth),
 		),
 		mpb.AppendDecorators(
 			decor.Percentage(),
@@ -178,7 +179,7 @@ func attemptScan(addresses chan scan.Address, dialer net.Dialer, summary *scan.S
 			time.Sleep(backoff) // apply exponential backoff timer
 		}
 
-		bar.Increment()
+		bar.Increment() // increment mpb progress bar
 	}
 }
 
