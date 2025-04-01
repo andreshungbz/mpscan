@@ -17,21 +17,21 @@ func main() {
 	// FLAG VARIABLES SETUP
 
 	var (
-		targetF    = flag.String("target", "", "the hostname or IP address to be scanned")
-		startPortF = flag.Int("start-port", 1, "the lower bound port to begin scanning")
-		endPortF   = flag.Int("end-port", 1024, "the upper bound port to finish scanning")
-		workersF   = flag.Int("workers", 100, "the number of concurrent goroutines to launch")
-		timeoutF   = flag.Int("timeout", 5, "the maximum time in seconds to wait for a connection to be established")
+		targetF    = flag.String("target", "", "The hostname or IP address to be scanned.")
+		startPortF = flag.Int("start-port", 1, "The lower bound port to begin scanning.")
+		endPortF   = flag.Int("end-port", 1024, "The upper bound port to finish scanning.")
+		workersF   = flag.Int("workers", 100, "The number of concurrent goroutines to launch per target.")
+		timeoutF   = flag.Int("timeout", 5, "The maximum time in seconds to wait for connections to be established.")
 
 		portsF   scan.PortList
 		targetsF scan.TargetList
-		jsonF    = flag.Bool("json", false, "indicates whether to also output JSON")
+		jsonF    = flag.Bool("json", false, "Indicates whether to also output a JSON file of the scan results.")
 
-		debugF = flag.Bool("debug", false, "displays flag values for debugging")
+		debugF = flag.Bool("debug", false, "Displays flag values for debugging.")
 	)
 
-	flag.Var(&portsF, "ports", "comma-separated list of ports (e.g., -ports=22,80,443)")
-	flag.Var(&targetsF, "targets", "comma-separated list of targets (e.g., -targets=localhost,scanme.nmap.org)")
+	flag.Var(&portsF, "ports", "Comma-separated list of ports (e.g., -ports=22,80,443). Setting this overrides -start-port and -end-port.")
+	flag.Var(&targetsF, "targets", "Comma-separated list of targets (e.g., -targets=localhost,scanme.nmap.org). Targets are aggregated with -target.")
 
 	flag.Parse()
 
