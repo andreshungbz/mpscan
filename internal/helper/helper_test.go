@@ -6,7 +6,7 @@ import (
 )
 
 func TestCreateTargets(t *testing.T) {
-	t.Run("aggregated targets", func (t *testing.T)  {
+	t.Run("aggregated targets", func(t *testing.T) {
 		target := "localhost"
 		targets := []string{"example.com", "scanme.nmap.org"}
 
@@ -18,7 +18,7 @@ func TestCreateTargets(t *testing.T) {
 		}
 	})
 
-	t.Run("missing target", func (t *testing.T)  {
+	t.Run("missing target", func(t *testing.T) {
 		target := ""
 		targets := []string{"example.com", "scanme.nmap.org"}
 
@@ -30,7 +30,7 @@ func TestCreateTargets(t *testing.T) {
 		}
 	})
 
-	t.Run("missing targets", func (t *testing.T)  {
+	t.Run("missing targets", func(t *testing.T) {
 		target := "localhost"
 		targets := []string{}
 
