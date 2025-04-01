@@ -46,7 +46,7 @@ make
 Usage
 
 ```
-./bin/mpscan -target=scanme.nmap.org -ports=22,80,443 -json
+./bin/mpscan -targets=scanme.nmap.org,go.dev -ports=22,80,443 -json
 ```
 
 Output
