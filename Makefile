@@ -25,6 +25,6 @@ build: vet
 	@go build -o $(BUILD_DIR)
 
 clean:
-	@echo "$(PREFIX) removing $(BUILD_DIR) and generated JSON files"
+	@echo "$(PREFIX) removing $(BUILD_DIR) and generated JSON files in project root"
 	@rm -rfv $(BUILD_DIR)
 	@rm -v *-mpscan.json
