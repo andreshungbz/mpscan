@@ -4,7 +4,7 @@
 
 ## Video Demonsration
 
-Watch a video demo of the program on [YouTube]().
+Watch a video demo of the program on [YouTube](https://youtu.be/nHhIzGrHFOQ?si=21GqDZ6JCSVZ9zGK).
 
 ## Building & Running From Source
 
