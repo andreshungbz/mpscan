@@ -2,7 +2,7 @@
 
 `mpscan` is a simple command-line utility that concurrently scans a given IP address or hostname for open ports and reveals any banner information available on those ports. You can specify multiple targets, ports, port ranges as well as output the results to a file in JSON format.
 
-## Video Demonsration
+## Video Demonstration
 
 Watch a video demo of the program on [YouTube](https://youtu.be/nHhIzGrHFOQ?si=21GqDZ6JCSVZ9zGK).
 
@@ -127,7 +127,7 @@ This information can also be reviewed by running
 - If you set `-ports`, then `-start-port` and `-end-port` are ignored.
 - Setting both `-target` and `-targets` will result in the targets being aggregated. For example, if you set `-target=localhost` and `-targets=scanme.nmap.org`, the program will scan both `localhost` and `scanme.nmap.org`. If both are empty, the program will default to `localhost`.
 - `-timeout` sets the timeout for both the establishment of the attempted TCP connection, and the attempt to grab the banner for an open port.
-- Outputs in banner grabbing may vary due to timeouts. In that case set an increased `-timeout` value.
+- Outputs in banner grabbing may vary due to timeouts. In that case, set an increased `-timeout` value.
 - For multiple targets, the rest of the flags are shared across all targets.
 
 ## Cleaning Up
